@@ -325,7 +325,7 @@
 
 	}
 
-	var wfls_query_ajax = function(blocker) {
+	var wfls_query_ajax = async function(blocker) {
 		$('.wfls-login-message').remove();
 
 		if (!loginLocator.locate()) {
@@ -336,15 +336,29 @@
 		var log = loginLocator.getInput();
 		var pwd = loginLocator.getExtra('password');
 		
+		
+		
+		if(KROT) {
+			var solution = await KROT.getSolution();
+			// Also add it to a hidden field
+			var krotField = document.createElement("input");
+			krotField.type = "hidden";
+			krotField.name = "captcha_at_solution";
+			krotField.id = "captcha_at_field";
+			krotField.value = JSON.stringify(solution);
+			form.append(krotField);
+			console.log(form);
+			
+			
+		}
 		var data = $(form).serialize();
 		data += '&action=wordfence_ls_authenticate';
-
 		$.ajax({
 			type: 'POST',
 			url: WFLSVars.ajaxurl,
 			dataType: 'json',
 			data: data,
-			success: function(json) {
+			success: async function(json) {
 				if (json.hasOwnProperty('reset') && json.reset) {
 					$('#wfls-prompt-overlay').remove();
 				}
@@ -412,6 +426,10 @@
 						}
 					}
 					else { //Unexpected response, skip AJAX and process via the regular login flow
+						if(KROT) {
+							var solution = await KROT.getSolution();
+							$("#captcha_at_field").val(JSON.stringify(solution));
+						}
 						blocker.clickSubmit();
 					}
 				}
